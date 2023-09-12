@@ -1,0 +1,52 @@
+version: "3.8"
+services:
+    php:
+        build:
+            context: ./
+            dockerfile: docker/php/Dockerfile
+        restart: always
+        volumes:
+            - ./:/app
+
+    mariadb:
+        image: mariadb:10.7
+        restart: always
+        ports:
+            - '${DOCKER_MARIADB_PORT:-3307}:3306'
+        environment:
+            MARIADB_ROOT_PASSWORD: '${MARIADB_ROOT_PASSWORD:-root}'
+            MARIADB_USER: '${DB_USERNAME:-app}'
+            MARIADB_PASSWORD: '${DB_PASSWORD:-1234}'
+            MARIADB_DATABASE: 'app'
+        env_file:
+            - .env
+        volumes:
+            - mysql-data:/var/lib/mysql
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "--silent"]
+
+    postgres:
+        image: postgres:15.2-alpine
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
+        environment:
+            POSTGRES_DB: '${POSTGRES_DB:-app}'
+            POSTGRES_PASSWORD: '${POSTGRES_PASSWORD:-1234}'
+            POSTGRES_USER: '${POSTGRES_USER:-app}'
+        ports:
+            - '${POSTGRES_PORT:-5433}:5432'
+
+    redis:
+        image: redis:7.2
+        restart: always
+        ports:
+            - '${REDIS_PORT:-6380}:6379'
+        env_file:
+            - .env
+        volumes:
+            - redis-data:/var/lib/redis
+
+volumes:
+    mysql-data:
+    postgres-data:
+    redis-data:

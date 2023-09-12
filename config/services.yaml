@@ -1,0 +1,58 @@
+parameters:
+    storage_dir: '%kernel.project_dir%/var/storage'
+
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    App\Console\:
+        resource: '%kernel.project_dir%/src/Console'
+        tags: ['console.command']
+
+    App\Domain\Repository\MysqlEventRepository:
+        arguments:
+            $connection: '@doctrine.dbal.mariadb_connection'
+
+    App\Domain\Repository\PostgresEventRepository:
+        arguments:
+            $connection: '@doctrine.dbal.postgres_connection'
+
+    App\Domain\Repository\RedisEventRepository:
+        arguments:
+            $connection: '@Redis'
+
+    App\Domain\Repository\EventRepositoryFactory:
+        arguments:
+            $mysqlEventRepository: '@App\Domain\Repository\MysqlEventRepository'
+            $postgresEventRepository: '@App\Domain\Repository\PostgresEventRepository'
+            $redisEventRepository: '@App\Domain\Repository\RedisEventRepository'
+
+    App\Service\FileImport\FileReader:
+        arguments:
+            $storageDir: '%storage_dir%'
+
+    App\Service\FileImport\FileImporter: ~
+
+    App\Service\FileImport\FileImporterInterface: '@App\Service\FileImport\FileImporter'
+
+    App\Service\FileGenerator\FileGenerator:
+        arguments:
+            $storageDir: '%storage_dir%'
+            $faker: '@Faker\Generator'
+
+    App\Service\FileGenerator\FileGeneratorInterface: '@App\Service\FileGenerator\FileGenerator'
+
+    Redis:
+        class: Redis
+        calls:
+            -   connect:
+                    - '%env(REDIS_URL)%'
+
+    Faker\Generator:
+        factory: ['Faker\Factory', 'create']
+
+
+
